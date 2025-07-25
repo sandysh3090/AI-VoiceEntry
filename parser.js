@@ -53,7 +53,7 @@ const openai = new OpenAI({
     })
 
   const output = response.choices[0].message.content
-  return output
+  return JSON.parse(output)
 }
 
 

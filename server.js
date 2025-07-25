@@ -34,7 +34,7 @@ app.post('/demo', (req, res) => {
 app.post('/ledger_parser', async (req, res) => {
   const data = req.body;
   const result = await parser(data.currentLedgersNames, data.lastYearLedgersNames);
-  res.json({ message: 'matched ledgers', result });
+  res.json(result);
 });
 
 app.listen(port, () => {
