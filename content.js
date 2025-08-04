@@ -73,9 +73,64 @@ function createFloatingButtons() {
   });
 
   // Add click handlers
-  recordBtn.addEventListener('click', () => {
-    // Send message to background script to open popup
-    chrome.runtime.sendMessage({ action: 'openPopup' });
+  recordBtn.addEventListener('click', async () => {
+    try {
+      console.log('Requesting microphone access...');
+      
+      // Check if MediaDevices API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported in this browser');
+      }
+      
+      // Check current permission status
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+      console.log('Current microphone permission:', permissionStatus.state);
+      
+      if (permissionStatus.state === 'denied') {
+        alert('❌ Microphone access was previously denied. Please:\n1. Go to chrome://settings/content/microphone\n2. Remove any blocked sites\n3. Try again');
+        return;
+      }
+      
+      // Try to get microphone access directly first
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      // If we get here, permission was granted
+      console.log('Microphone permission granted');
+      
+      // Stop the stream immediately since we just wanted to test permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now open the popup for actual recording
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'openPopup' });
+        console.log('Popup response:', response);
+      } catch (error) {
+        console.error('Failed to open popup:', error);
+        // Fallback: just open the extension popup manually
+        alert('✅ Microphone access granted! Please click the extension icon to record voice.');
+      }
+      
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      
+      if (error.message.includes('MediaDevices API not supported')) {
+        alert('❌ This browser does not support microphone access. Please use Chrome, Firefox, or Safari.');
+      } else if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        alert('❌ Microphone access denied. Please follow these steps:\n\n1. Click the camera/microphone icon in the address bar\n2. Select "Allow" for microphone access\n3. Refresh this page and try again\n\nOR\n\n1. Go to chrome://settings/content/microphone\n2. Remove any blocked sites\n3. Try again');
+      } else if (error.name === 'NotFoundError') {
+        alert('❌ No microphone found. Please connect a microphone and try again.');
+      } else if (error.name === 'NotReadableError') {
+        alert('❌ Microphone is in use by another application. Please close other apps using microphone.');
+      } else {
+        alert('❌ Error accessing microphone: ' + error.message);
+      }
+    }
   });
 
   historyBtn.addEventListener('click', () => {

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Background Script Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .test-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        .info { background-color: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Background Script Test</h1>
+    <p>This page tests if the extension's background script is working properly.</p>
+    
+    <button id="pingBtn" class="test-btn">Ping Background Script</button>
+    <button id="openPopupBtn" class="test-btn" style="background-color: #10b981;">Test Open Popup</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div style="margin-top: 30px; text-align: left;">
+        <h3>If tests fail:</h3>
+        <ol>
+            <li>Go to <a href="chrome://extensions/" target="_blank">chrome://extensions/</a></li>
+            <li>Find "Visitor Voice Entry System"</li>
+            <li>Click "Reload" button</li>
+            <li>Refresh this page and try again</li>
+        </ol>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        async function pingBackground() {
+            try {
+                showStatus('🔧 Pinging background script...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({ action: 'ping' });
+                console.log('Ping response:', response);
+                
+                if (response && response.success) {
+                    showStatus('✅ Background script is working!', 'success');
+                } else {
+                    showStatus('❌ Background script not responding properly', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Ping error:', error);
+                showStatus('❌ Could not connect to background script: ' + error.message, 'error');
+            }
+        }
+        
+        async function testOpenPopup() {
+            try {
+                showStatus('🔧 Testing popup opening...', 'info');
+                
+                const response = await chrome.runtime.sendMessage({ action: 'openPopup' });
+                console.log('Open popup response:', response);
+                
+                if (response && response.success) {
+                    showStatus('✅ Popup command sent successfully!', 'success');
+                } else {
+                    showStatus('❌ Popup command failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Open popup error:', error);
+                showStatus('❌ Could not open popup: ' + error.message, 'error');
+            }
+        }
+        
+        document.getElementById('pingBtn').addEventListener('click', pingBackground);
+        document.getElementById('openPopupBtn').addEventListener('click', testOpenPopup);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microphone Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .test-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        .info { background-color: #dbeafe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Microphone Test Page</h1>
+    <p>This page helps you test microphone access for the Voice Entry extension.</p>
+    
+    <button id="testBtn" class="test-btn">Test Microphone Access</button>
+    <button id="recordBtn" class="test-btn" style="background-color: #10b981; display: none;">Start Recording</button>
+    <button id="stopBtn" class="test-btn" style="background-color: #ef4444; display: none;">Stop Recording</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div style="margin-top: 30px; text-align: left;">
+        <h3>If microphone test fails:</h3>
+        <ol>
+            <li>Click the camera/microphone icon in the address bar</li>
+            <li>Select "Allow" for microphone access</li>
+            <li>Refresh this page and try again</li>
+            <li>If still failing, check browser settings</li>
+        </ol>
+        
+        <h3>Browser Settings:</h3>
+        <ul>
+            <li><strong>Chrome:</strong> chrome://settings/content/microphone</li>
+            <li><strong>Firefox:</strong> about:preferences#privacy (Permissions)</li>
+            <li><strong>Safari:</strong> Safari > Preferences > Websites > Microphone</li>
+        </ul>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        async function testMicrophone() {
+            try {
+                showStatus('🎤 Testing microphone access...', 'info');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                showStatus('✅ Microphone access granted! You can now use the extension.', 'success');
+                
+                // Show recording buttons
+                document.getElementById('recordBtn').style.display = 'inline-block';
+                document.getElementById('testBtn').style.display = 'none';
+                
+                // Store stream for recording
+                window.audioStream = stream;
+                
+            } catch (error) {
+                console.error('Microphone test error:', error);
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    showStatus('❌ Microphone access denied. Please allow microphone access in browser settings.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showStatus('❌ No microphone found. Please connect a microphone.', 'error');
+                } else {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        function startRecording() {
+            if (!window.audioStream) {
+                showStatus('❌ No microphone stream available. Please test microphone first.', 'error');
+                return;
+            }
+            
+            mediaRecorder = new MediaRecorder(window.audioStream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                // Create download link
+                const a = document.createElement('a');
+                a.href = audioUrl;
+                a.download = 'test-recording.webm';
+                a.textContent = 'Download Test Recording';
+                a.style.display = 'block';
+                a.style.margin = '10px 0';
+                a.style.padding = '10px';
+                a.style.backgroundColor = '#10b981';
+                a.style.color = 'white';
+                a.style.textDecoration = 'none';
+                a.style.borderRadius = '5px';
+                
+                document.body.appendChild(a);
+                
+                showStatus('✅ Recording completed! You can download the test file.', 'success');
+            };
+            
+            mediaRecorder.start();
+            document.getElementById('recordBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            showStatus('🎙️ Recording... Speak now!', 'info');
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                document.getElementById('stopBtn').style.display = 'none';
+                document.getElementById('recordBtn').style.display = 'inline-block';
+            }
+        }
+        
+        document.getElementById('testBtn').addEventListener('click', testMicrophone);
+        document.getElementById('recordBtn').addEventListener('click', startRecording);
+        document.getElementById('stopBtn').addEventListener('click', stopRecording);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microphone Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .test-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d1fae5; color: #065f46; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+        .info { background-color: #dbeafe; color: #1e40af; }
+        .instructions {
+            text-align: left;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Microphone Test for Extension</h1>
+    <p>This page helps you test microphone access for the Voice Entry extension.</p>
+    
+    <button id="testBtn" class="test-btn">Test Microphone Access</button>
+    <button id="resetBtn" class="test-btn" style="background-color: #ef4444;">Reset Permissions</button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div class="instructions">
+        <h3>If microphone test fails:</h3>
+        <ol>
+            <li><strong>Click the camera/microphone icon</strong> in the address bar</li>
+            <li><strong>Select "Allow"</strong> for microphone access</li>
+            <li><strong>Refresh this page</strong> and try again</li>
+            <li>If still failing, check browser settings below</li>
+        </ol>
+        
+        <h3>Browser Settings:</h3>
+        <ul>
+            <li><strong>Chrome:</strong> <a href="chrome://settings/content/microphone" target="_blank">chrome://settings/content/microphone</a></li>
+            <li><strong>Firefox:</strong> <a href="about:preferences#privacy" target="_blank">about:preferences#privacy</a></li>
+            <li><strong>Safari:</strong> Safari > Preferences > Websites > Microphone</li>
+        </ul>
+        
+        <h3>Extension Troubleshooting:</h3>
+        <ol>
+            <li>Go to <a href="chrome://extensions/" target="_blank">chrome://extensions/</a></li>
+            <li>Find "Visitor Voice Entry System"</li>
+            <li>Click "Details"</li>
+            <li>Ensure microphone permission is enabled</li>
+        </ol>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        async function testMicrophone() {
+            try {
+                showStatus('🎤 Testing microphone access...', 'info');
+                
+                // Check if MediaDevices API is available
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('MediaDevices API not supported');
+                }
+                
+                // Check current permission status
+                const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                console.log('Current permission status:', permissionStatus.state);
+                
+                if (permissionStatus.state === 'denied') {
+                    showStatus('❌ Microphone access was previously denied. Please reset permissions.', 'error');
+                    return;
+                }
+                
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                showStatus('✅ Microphone access granted! Extension should work now.', 'success');
+                
+                // Stop the stream
+                stream.getTracks().forEach(track => track.stop());
+                
+            } catch (error) {
+                console.error('Microphone test error:', error);
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    showStatus('❌ Microphone access denied. Please allow microphone access when prompted.', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showStatus('❌ No microphone found. Please connect a microphone.', 'error');
+                } else if (error.message.includes('MediaDevices API not supported')) {
+                    showStatus('❌ This browser does not support microphone access.', 'error');
+                } else {
+                    showStatus('❌ Error: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        function resetPermissions() {
+            showStatus('🔄 Attempting to reset permissions...', 'info');
+            
+            // Try to clear any stored permissions
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({ name: 'microphone' }).then(permission => {
+                    console.log('Permission status:', permission.state);
+                    showStatus('ℹ️ Permission status: ' + permission.state, 'info');
+                });
+            }
+            
+            // Provide manual instructions
+            setTimeout(() => {
+                showStatus('📋 Please manually reset permissions:\n1. Go to chrome://settings/content/microphone\n2. Remove any blocked sites\n3. Refresh this page and try again', 'info');
+            }, 1000);
+        }
+        
+        document.getElementById('testBtn').addEventListener('click', testMicrophone);
+        document.getElementById('resetBtn').addEventListener('click', resetPermissions);
+    </script>
+</body>
+</html> 
