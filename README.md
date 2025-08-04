@@ -58,3 +58,5 @@ Output:
     }
 }
 ```
+<img width="1386" height="309" alt="Screenshot 2025-08-04 at 3 56 07 PM" src="https://github.com/user-attachments/assets/74b346a2-3a61-450a-9ac0-b73e1badd4bb" />
+
