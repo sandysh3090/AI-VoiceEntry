@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Test</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        console.log('React version:', React.version);
+        console.log('ReactDOM version:', ReactDOM.version);
+        
+        const { useState } = React;
+        
+        const TestApp = () => {
+            const [count, setCount] = useState(0);
+            
+            return (
+                <div className="p-6 text-center">
+                    <h1 className="text-2xl font-bold mb-4">React Test</h1>
+                    <p className="mb-4">Count: {count}</p>
+                    <button 
+                        onClick={() => setCount(count + 1)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded"
+                    >
+                        Increment
+                    </button>
+                    <p className="mt-4 text-green-600">✅ React is working!</p>
+                </div>
+            );
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TestApp />);
+    </script>
+</body>
+</html> 

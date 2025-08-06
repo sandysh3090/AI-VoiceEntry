@@ -15,8 +15,17 @@
     
     <script type="text/babel" src="app.js"></script>
     <script type="text/babel">
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        console.log('React version:', React.version);
+        console.log('ReactDOM version:', ReactDOM.version);
+        
+        if (typeof App !== 'undefined') {
+            console.log('App component found, rendering...');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } else {
+            console.error('App component not found!');
+            document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Error: App component not loaded. Check console for details.</div>';
+        }
     </script>
 </body>
 </html> 

@@ -1,11 +1,14 @@
 const { useState, useEffect } = React;
 
-function App() {
-  const [history, setHistory] = useState([]);
+const App = () => {
+  console.log('App component loaded');
+  const [history, setHistory] = useState({ visitors: [], general: [], expenses: [] });
   const [loading, setLoading] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
+  const [activeTab, setActiveTab] = useState('visitors');
+  const [showHindi, setShowHindi] = useState(true);
 
   // Fetch history on component mount
   useEffect(() => {
@@ -120,7 +123,7 @@ function App() {
 
   return (
     <div className="p-6 font-sans text-center">
-      <h1 className="text-2xl font-bold mb-4">Visitor Voice Entry</h1>
+      <h1 className="text-2xl font-bold mb-4">Voice Entry System</h1>
       
       {/* Toast Alert */}
       {showAlert && (
@@ -136,13 +139,121 @@ function App() {
       </button>
       <br />
       <button onClick={fetchHistory} className="bg-green-500 text-white p-2 rounded mb-4">View Today's History</button>
-      <ul className="mt-4">
-        {history.map((entry, index) => (
-          <li key={index} className="border p-2 mb-2 rounded shadow">
-            <strong>Name:</strong> {entry.name}, <strong>Mobile:</strong> {entry.mobile}, <strong>Purpose:</strong> {entry.purpose}
-          </li>
-        ))}
-      </ul>
+      
+      {/* Language Toggle */}
+      <div className="mb-4">
+        <label className="inline-flex items-center">
+          <input 
+            type="checkbox" 
+            checked={showHindi} 
+            onChange={(e) => setShowHindi(e.target.checked)}
+            className="mr-2"
+          />
+          <span>Show Hindi/Urdu translations</span>
+        </label>
+      </div>
+      
+      {/* Tabs */}
+      <div className="flex justify-center mb-4">
+        <button 
+          onClick={() => setActiveTab('visitors')} 
+          className={`px-4 py-2 mx-1 rounded ${activeTab === 'visitors' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+        >
+          👥 Visitors ({history.visitors.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('general')} 
+          className={`px-4 py-2 mx-1 rounded ${activeTab === 'general' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+        >
+          📝 General ({history.general.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('expenses')} 
+          className={`px-4 py-2 mx-1 rounded ${activeTab === 'expenses' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+        >
+          💰 Expenses ({history.expenses.length})
+        </button>
+      </div>
+      
+      {/* Content based on active tab */}
+      <div className="mt-4">
+        {activeTab === 'visitors' && (
+          <div>
+            <h2 className="text-xl font-bold mb-2">Visitor Entries</h2>
+            {history.visitors.length === 0 ? (
+              <p className="text-gray-500">No visitor entries today</p>
+            ) : (
+              <ul>
+                {history.visitors.map((entry, index) => (
+                  <li key={index} className="border p-3 mb-2 rounded shadow text-left">
+                    <strong>Name:</strong> {entry.name}<br />
+                    {showHindi && entry.nameHindi && entry.nameHindi !== entry.name && (
+                      <span className="text-blue-600">हिंदी: {entry.nameHindi}<br /></span>
+                    )}
+                    <strong>Mobile:</strong> {entry.mobile}<br />
+                    <strong>Purpose:</strong> {entry.purpose}<br />
+                    {showHindi && entry.purposeHindi && entry.purposeHindi !== entry.purpose && (
+                      <span className="text-blue-600">हिंदी: {entry.purposeHindi}<br /></span>
+                    )}
+                    <small className="text-gray-500">{new Date(entry.createdAt).toLocaleString()}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'general' && (
+          <div>
+            <h2 className="text-xl font-bold mb-2">General Entries</h2>
+            {history.general.length === 0 ? (
+              <p className="text-gray-500">No general entries today</p>
+            ) : (
+              <ul>
+                {history.general.map((entry, index) => (
+                  <li key={index} className="border p-3 mb-2 rounded shadow text-left">
+                    <strong>Details:</strong> {entry.details}<br />
+                    {showHindi && entry.detailsHindi && entry.detailsHindi !== entry.details && (
+                      <span className="text-blue-600">हिंदी: {entry.detailsHindi}<br /></span>
+                    )}
+                    <strong>DateTime:</strong> {entry.datetime}<br />
+                    {showHindi && entry.datetimeHindi && entry.datetimeHindi !== entry.datetime && (
+                      <span className="text-blue-600">हिंदी: {entry.datetimeHindi}<br /></span>
+                    )}
+                    <small className="text-gray-500">{new Date(entry.createdAt).toLocaleString()}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'expenses' && (
+          <div>
+            <h2 className="text-xl font-bold mb-2">Expense Entries</h2>
+            {history.expenses.length === 0 ? (
+              <p className="text-gray-500">No expense entries today</p>
+            ) : (
+              <ul>
+                {history.expenses.map((entry, index) => (
+                  <li key={index} className="border p-3 mb-2 rounded shadow text-left">
+                    <strong>Item:</strong> {entry.item}<br />
+                    {showHindi && entry.itemHindi && entry.itemHindi !== entry.item && (
+                      <span className="text-blue-600">हिंदी: {entry.itemHindi}<br /></span>
+                    )}
+                    <strong>Amount:</strong> ₹{entry.amount}<br />
+                    <strong>DateTime:</strong> {entry.datetime}<br />
+                    {showHindi && entry.datetimeHindi && entry.datetimeHindi !== entry.datetime && (
+                      <span className="text-blue-600">हिंदी: {entry.datetimeHindi}<br /></span>
+                    )}
+                    <small className="text-gray-500">{new Date(entry.createdAt).toLocaleString()}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

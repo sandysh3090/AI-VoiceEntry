@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Test</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>System Test</h1>
+    <button onclick="testHistory()">Test History API</button>
+    <button onclick="testServer()">Test Server</button>
+    <div id="results"></div>
+
+    <script>
+        async function testHistory() {
+            try {
+                const response = await axios.get('http://localhost:3000/history');
+                document.getElementById('results').innerHTML = '<p>✅ History API working: ' + JSON.stringify(response.data) + '</p>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p>❌ History API error: ' + error.message + '</p>';
+            }
+        }
+
+        async function testServer() {
+            try {
+                const response = await axios.get('http://localhost:3000/');
+                document.getElementById('results').innerHTML = '<p>✅ Server working: ' + JSON.stringify(response.data) + '</p>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p>❌ Server error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html> 

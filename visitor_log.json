@@ -1,3 +1,81 @@
 [
-  
+  {
+    "id": "396c1698-badf-45dc-a177-60af754ae016",
+    "type": "visitor",
+    "name": "Sandeep Sarma",
+    "mobile": "8955767558",
+    "purpose": "visit flat",
+    "createdAt": "2025-08-04T11:47:10.710Z"
+  },
+  {
+    "id": "50400ff1-f70f-41ea-a6ee-f86028e030d2",
+    "type": "expense",
+    "item": "دو چائے",
+    "amount": "20",
+    "datetime": "now",
+    "createdAt": "2025-08-04T11:47:30.490Z"
+  },
+  {
+    "id": "c66757fd-6064-4e89-bb95-6ce0766ddbd2",
+    "type": "general",
+    "details": "دھونا سے بات کرنی انٹریو کرلے",
+    "datetime": "کل پانچ بجے پائی پی ایم",
+    "createdAt": "2025-08-04T11:47:50.169Z"
+  },
+  {
+    "id": "359ed9a6-eb95-4791-ad45-cee7faf0253c",
+    "type": "general",
+    "details": "I have to talk to Abhishek tomorrow for an interview",
+    "detailsHindi": "I have to talk to Abhishek tomorrow for an interview",
+    "datetime": "tomorrow at 5 PM",
+    "datetimeHindi": "tomorrow at 5 PM",
+    "createdAt": "2025-08-04T11:55:45.942Z"
+  },
+  {
+    "id": "aa5edc08-c5c4-400f-b6f1-708deb0e6796",
+    "type": "general",
+    "details": "need to talk to Dhora for interview and plan a visit at Mahabaleshwar",
+    "detailsHindi": "کل دھوڑا سے بات کرنی ہے انٹرویو اینڈ پلان اے وزٹ ایڈ مہابلیس",
+    "datetime": "today at 4 PM",
+    "datetimeHindi": "آج کمارو ایٹ فول پی ایم",
+    "createdAt": "2025-08-04T11:56:52.442Z"
+  },
+  {
+    "id": "139da9f6-be86-4b34-ba7f-a694c98db75c",
+    "type": "expense",
+    "item": "milk",
+    "itemHindi": "दूद",
+    "amount": "100",
+    "datetime": "now",
+    "datetimeHindi": "अभी",
+    "createdAt": "2025-08-04T11:57:18.813Z"
+  },
+  {
+    "id": "76cd5f18-0988-4aa7-be27-1ced94fefad1",
+    "type": "general",
+    "details": "need to talk Bhavna for interview and we need to plan for a resort visit for a team party",
+    "detailsHindi": "need to talk Bhavna for interview and we need to plan for a resort visit for a team party",
+    "datetime": "tomorrow at 4 PM",
+    "datetimeHindi": "tomorrow at 4 PM",
+    "createdAt": "2025-08-04T11:57:54.541Z"
+  },
+  {
+    "id": "89100e0b-abcf-4f23-83ce-eb64ee86deef",
+    "type": "expense",
+    "item": "2 kg of milk",
+    "itemHindi": "2 kg of milk",
+    "amount": "unknown",
+    "datetime": "today",
+    "datetimeHindi": "today",
+    "createdAt": "2025-08-04T12:45:02.625Z"
+  },
+  {
+    "id": "b5a0bec3-4a15-47f4-a44f-e89ea091670a",
+    "type": "general",
+    "details": "I have to meet with Vipinji today",
+    "detailsHindi": "आज मेरे को विपिंजी से मिलना है",
+    "datetime": "5 PM",
+    "datetimeHindi": "फाइप उकलोक",
+    "createdAt": "2025-08-04T12:45:29.737Z"
+  }
 ]

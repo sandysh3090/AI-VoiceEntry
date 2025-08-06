@@ -101,24 +101,65 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
 
     const text = whisperResponse.data.text;
     console.log('Transcribed text:', text);
+    
+    // Check if text contains non-English characters and needs translation
+    const hasNonEnglish = /[^\x00-\x7F]/.test(text);
+    if (hasNonEnglish) {
+      console.log('Detected non-English text, requesting translation...');
+    }
 
     // Extract structured data with GPT using structured JSON output
     const prompt = `
-    You are a helpful assistant that extracts visitor information from transcribed voice recordings.
+    You are a helpful assistant that categorizes and extracts information from voice recordings.
 
-    Extract the visitor's name, mobile number, and purpose from the given text.
-    The text may contain variations like:
-    - "Visitor [Name], mobile number is [number] to [purpose]"
-    - "[Name], mobile number is [number] to [purpose]"
-    - "[Name], mobile [number], purpose [purpose]"
-    - "purpose [purpose], [Name], mobile [number]"
-    - "[number], purpose [purpose], [Name]"
+    IMPORTANT: First translate the input to English if it's in any other language, then categorize and extract information.
+
+    Categorize the entry into one of these types:
+    1. "visitor" - for visitor entries (e.g., "sandeep came here for checkout our flats")
+    2. "general" - for general tasks/meetings (e.g., "need to connect with bhavna on app status at 4 PM")
+    3. "expense" - for expense entries (e.g., "Buy 2 kg Milk in 50 Rs")
+
+    For each type, extract the relevant information in ENGLISH:
+
+    VISITOR ENTRIES:
+    - Extract: name, mobile, purpose
+    - Example: "sandeep came here for checkout our flats" → type: "visitor", name: "sandeep", purpose: "checkout our flats"
+
+    GENERAL ENTRIES:
+    - Extract: details, datetime
+    - Example: "need to connect with bhavna on app status at 4 PM" → type: "general", details: "need to connect with bhavna on app status", datetime: "4 PM"
+
+    EXPENSE ENTRIES:
+    - Extract: item, amount, datetime
+    - Example: "Buy 2 kg Milk in 50 Rs" → type: "expense", item: "2 kg Milk", amount: "50", datetime: "now"
+
+    INSTRUCTIONS:
+    1. If the input is in Hindi, Urdu, or any other language, provide both original and English translation
+    2. Categorize and extract the information
+    3. Return the information in both original language and English
+    4. For dates/times, provide both formats (e.g., "کل پانچ بجے" and "tomorrow at 5 PM")
+    5. For the example you provided: "دھونا سے بات کرنی انٹریو کرلے کل پانچ بجے پائی پی ایم" should become:
+       - type: "general"
+       - details: "need to talk to Dhona for interview"
+       - detailsHindi: "دھونا سے بات کرنی انٹریو کرلے"
+       - datetime: "tomorrow at 5 PM"
+       - datetimeHindi: "کل پانچ بجے"
 
     Return the result strictly in this JSON format:
     {
-      "name": "visitor name",
-      "mobile": "mobile number",
-      "purpose": "visit purpose"
+      "type": "visitor|general|expense",
+      "name": "name (for visitor entries)",
+      "nameHindi": "name in Hindi/Urdu (for visitor entries)",
+      "mobile": "mobile number (for visitor entries)",
+      "purpose": "purpose (for visitor entries)",
+      "purposeHindi": "purpose in Hindi/Urdu (for visitor entries)",
+      "details": "details (for general entries)",
+      "detailsHindi": "details in Hindi/Urdu (for general entries)",
+      "datetime": "datetime (for general/expense entries)",
+      "datetimeHindi": "datetime in Hindi/Urdu (for general/expense entries)",
+      "item": "item description (for expense entries)",
+      "itemHindi": "item in Hindi/Urdu (for expense entries)",
+      "amount": "amount in Rs (for expense entries)"
     }
 
     Here is the transcribed text: "${text}"
@@ -145,40 +186,126 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
       if (jsonMatch) {
         extractedData = JSON.parse(jsonMatch[0]);
       } else {
-        // Fallback: try to extract information using regex
+        // Fallback: try to extract information using regex for all types
+        const typeMatch = responseText.match(/type["\s]*:["\s]*"([^"]+)"/i);
         const nameMatch = responseText.match(/name["\s]*:["\s]*"([^"]+)"/i);
         const mobileMatch = responseText.match(/mobile["\s]*:["\s]*"([^"]+)"/i);
         const purposeMatch = responseText.match(/purpose["\s]*:["\s]*"([^"]+)"/i);
+        const detailsMatch = responseText.match(/details["\s]*:["\s]*"([^"]+)"/i);
+        const datetimeMatch = responseText.match(/datetime["\s]*:["\s]*"([^"]+)"/i);
+        const itemMatch = responseText.match(/item["\s]*:["\s]*"([^"]+)"/i);
+        const amountMatch = responseText.match(/amount["\s]*:["\s]*"([^"]+)"/i);
         
         extractedData = {
+          type: typeMatch ? typeMatch[1] : 'visitor',
           name: nameMatch ? nameMatch[1] : 'Unknown',
           mobile: mobileMatch ? mobileMatch[1] : 'Unknown',
-          purpose: purposeMatch ? purposeMatch[1] : 'Unknown'
+          purpose: purposeMatch ? purposeMatch[1] : 'Unknown',
+          details: detailsMatch ? detailsMatch[1] : 'Unknown',
+          datetime: datetimeMatch ? datetimeMatch[1] : 'Unknown',
+          item: itemMatch ? itemMatch[1] : 'Unknown',
+          amount: amountMatch ? amountMatch[1] : 'Unknown'
         };
       }
     } catch (error) {
       console.log('Failed to parse JSON, using fallback extraction');
-      // Fallback extraction from original text
-      const nameMatch = text.match(/([A-Za-z\s]+)(?:,|\s+visiting|\s+visitor)/i);
-      const mobileMatch = text.match(/mobile\s*number\s*is\s*(\d[\d\s]+)/i);
-      const purposeMatch = text.match(/(?:to\s+|purpose\s+)([^.]+)/i);
+      // Fallback extraction from original text - try to determine type
+      let type = 'visitor';
       
-      extractedData = {
-        name: nameMatch ? nameMatch[1].trim() : 'Unknown',
-        mobile: mobileMatch ? mobileMatch[1].trim() : 'Unknown',
-        purpose: purposeMatch ? purposeMatch[1].trim() : 'Unknown'
-      };
+      // Check for common words in different languages
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('buy') || lowerText.includes('rs') || lowerText.includes('rupee') || 
+          lowerText.includes('خرید') || lowerText.includes('روپے') || lowerText.includes('खरीद')) {
+        type = 'expense';
+      } else if (lowerText.includes('connect') || lowerText.includes('meeting') || lowerText.includes('call') ||
+                 lowerText.includes('بات') || lowerText.includes('ملاقات') || lowerText.includes('कॉल')) {
+        type = 'general';
+      }
+      
+      if (type === 'visitor') {
+        const nameMatch = text.match(/([A-Za-z\s]+)(?:,|\s+visiting|\s+visitor)/i);
+        const mobileMatch = text.match(/mobile\s*number\s*is\s*(\d[\d\s]+)/i);
+        const purposeMatch = text.match(/(?:to\s+|purpose\s+)([^.]+)/i);
+        
+        extractedData = {
+          type: 'visitor',
+          name: nameMatch ? nameMatch[1].trim() : 'Unknown',
+          mobile: mobileMatch ? mobileMatch[1].trim() : 'Unknown',
+          purpose: purposeMatch ? purposeMatch[1].trim() : 'Unknown'
+        };
+      } else if (type === 'general') {
+        const detailsMatch = text.match(/(.+?)(?:\s+at\s+\d+|\s+on\s+)/i);
+        const datetimeMatch = text.match(/(?:at\s+|on\s+)(.+)/i);
+        
+        extractedData = {
+          type: 'general',
+          details: detailsMatch ? detailsMatch[1].trim() : text,
+          datetime: datetimeMatch ? datetimeMatch[1].trim() : 'Unknown'
+        };
+      } else if (type === 'expense') {
+        const itemMatch = text.match(/(?:buy\s+|get\s+)(.+?)(?:\s+in\s+\d+|\s+for\s+\d+)/i);
+        const amountMatch = text.match(/(?:in\s+|for\s+)(\d+)/i);
+        
+        extractedData = {
+          type: 'expense',
+          item: itemMatch ? itemMatch[1].trim() : 'Unknown',
+          amount: amountMatch ? amountMatch[1].trim() : 'Unknown',
+          datetime: 'now'
+        };
+      }
     }
     
     console.log('Extracted data:', extractedData);
-    // Create entry from extracted data
-    const entry = {
-      id: uuidv4(),
-      name: extractedData.name,
-      mobile: extractedData.mobile,
-      purpose: extractedData.purpose,
-      createdAt: new Date().toISOString()
-    };
+    
+    // Create entry based on type
+    let entry;
+    const currentTime = new Date().toISOString();
+    
+    if (extractedData.type === 'visitor') {
+      entry = {
+        id: uuidv4(),
+        type: 'visitor',
+        name: extractedData.name || 'Unknown',
+        nameHindi: extractedData.nameHindi || extractedData.name || 'Unknown',
+        mobile: extractedData.mobile || 'Unknown',
+        purpose: extractedData.purpose || 'Unknown',
+        purposeHindi: extractedData.purposeHindi || extractedData.purpose || 'Unknown',
+        createdAt: currentTime
+      };
+    } else if (extractedData.type === 'general') {
+      entry = {
+        id: uuidv4(),
+        type: 'general',
+        details: extractedData.details || 'Unknown',
+        detailsHindi: extractedData.detailsHindi || extractedData.details || 'Unknown',
+        datetime: extractedData.datetime || 'Unknown',
+        datetimeHindi: extractedData.datetimeHindi || extractedData.datetime || 'Unknown',
+        createdAt: currentTime
+      };
+    } else if (extractedData.type === 'expense') {
+      entry = {
+        id: uuidv4(),
+        type: 'expense',
+        item: extractedData.item || 'Unknown',
+        itemHindi: extractedData.itemHindi || extractedData.item || 'Unknown',
+        amount: extractedData.amount || 'Unknown',
+        datetime: extractedData.datetime || 'Unknown',
+        datetimeHindi: extractedData.datetimeHindi || extractedData.datetime || 'Unknown',
+        createdAt: currentTime
+      };
+    } else {
+      // Fallback to visitor entry if type is not recognized
+      entry = {
+        id: uuidv4(),
+        type: 'visitor',
+        name: extractedData.name || 'Unknown',
+        nameHindi: extractedData.nameHindi || extractedData.name || 'Unknown',
+        mobile: extractedData.mobile || 'Unknown',
+        purpose: extractedData.purpose || 'Unknown',
+        purposeHindi: extractedData.purposeHindi || extractedData.purpose || 'Unknown',
+        createdAt: currentTime
+      };
+    }
 
     console.log('Created entry:', entry);
 
@@ -187,7 +314,13 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
     existing.push(entry);
     fs.writeFileSync(VISITOR_LOG, JSON.stringify(existing, null, 2));
 
-    res.json({ message: 'Visitor entry logged successfully.', entry });
+    const typeMessages = {
+      'visitor': 'Visitor entry logged successfully.',
+      'general': 'General entry logged successfully.',
+      'expense': 'Expense entry logged successfully.'
+    };
+
+    res.json({ message: typeMessages[entry.type] || 'Entry logged successfully.', entry });
   } catch (err) {
     console.error('Full error:', err);
     if (err.response) {
@@ -199,11 +332,19 @@ app.post('/voice', upload.single('audio'), async (req, res) => {
   }
 });
 
-// GET /api/history - return today's entries
+// GET /api/history - return today's entries categorized by type
 app.get('/history', (req, res) => {
   const all = JSON.parse(fs.readFileSync(VISITOR_LOG));
   const today = new Date().toISOString().split('T')[0];
   const todayEntries = all.filter(e => e.createdAt.startsWith(today));
-  res.json(todayEntries);
+  
+  // Categorize entries by type
+  const categorized = {
+    visitors: todayEntries.filter(e => e.type === 'visitor'),
+    general: todayEntries.filter(e => e.type === 'general'),
+    expenses: todayEntries.filter(e => e.type === 'expense')
+  };
+  
+  res.json(categorized);
 });
 
